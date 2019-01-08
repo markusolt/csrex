@@ -15,9 +15,7 @@ namespace CsRex {
     internal const ushort instr_char = 6;
 
     public Regex (string pattern) {
-      // _program = RegexParser.Parse(pattern); TODO: Implement RegexParser
-      _program = null!;
-
+      _program = RegexParser.Parse(pattern);
       _threads = new ThreadManager(_program.Length);
     }
 
