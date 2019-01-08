@@ -76,7 +76,6 @@ namespace CsRex {
 
         _threads.Reset();
         while (_threads.TryPull(out ip)) {
-          Console.WriteLine(ip);
           switch (_program[ip]) {
             case instr_success: {
               match = new Match(true, offset, tp - offset);
