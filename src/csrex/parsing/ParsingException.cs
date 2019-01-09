@@ -1,7 +1,7 @@
 using System;
-using CsRex;
+using CsRex.Parsing;
 
-namespace CsRex {
+namespace CsRex.Parsing {
   public class ParsingException : Exception {
     public ParsingException (string message) : base(message) {}
   }

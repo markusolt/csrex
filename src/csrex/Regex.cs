@@ -13,9 +13,11 @@ namespace CsRex {
     internal const ushort instr_jump = 4;
     internal const ushort instr_jumpback = 5;
     internal const ushort instr_char = 6;
+    internal const ushort instr_class = 7;
+    internal const ushort instr_range = 8;
 
     public Regex (string pattern) {
-      _program = RegexParser.Parse(pattern);
+      _program = Parsing.RegexParser.Parse(pattern);
       _threads = new ThreadManager(_program.Length);
     }
 
@@ -50,6 +52,14 @@ namespace CsRex {
           }
           case instr_char: {
             Console.Write("char '{0}'", (char) _program[++i]);
+            break;
+          }
+          case instr_class: {
+            Console.Write("class :{0}", i + 2 + _program[++i]);
+            break;
+          }
+          case instr_range: {
+            Console.Write("range '{0}'-'{1}'", (char) _program[++i], (char) _program[++i]);
             break;
           }
         }
@@ -114,6 +124,46 @@ namespace CsRex {
               ip += 2;
 
               goto next_thread;
+            }
+            case instr_class: {
+              int skip;
+              char c;
+
+              if (tp >= line.Length) {
+                goto kill_thread;
+              }
+              skip = ip + 2 + _program[ip + 1];
+              c = line[tp];
+
+              ip += 2;
+              while (ip < skip) {
+                switch (_program[ip]) {
+                  case instr_char: {
+                    if (c == (char) _program[ip + 1]) {
+                      ip = skip;
+                      goto next_thread;
+                    }
+                    ip += 2;
+                    break;
+                  }
+                  case instr_range: {
+                    if (_program[ip + 1] <= c && c <= _program[ip + 2]) {
+                      ip = skip;
+                      goto next_thread;
+                    }
+                    ip += 3;
+                    break;
+                  }
+                  default: {
+                    throw new Exception("Unkown instruction.");
+                  }
+                }
+              }
+
+              goto kill_thread;
+            }
+            default: {
+              throw new Exception("Unkown instruction.");
             }
           }
 
