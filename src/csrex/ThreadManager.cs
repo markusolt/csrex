@@ -9,7 +9,7 @@ namespace CsRex {
     private int _it;
 
     internal ThreadManager (int length) {
-      _visited = new bool[length];
+      _visited = new bool[length + 1]; // include space for implied trailing success
       _iterator = new int[1];
       _iteratorLength = 0;
       _it = 0;
