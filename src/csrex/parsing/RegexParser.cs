@@ -4,10 +4,10 @@ using CsRex.Parsing;
 
 namespace CsRex.Parsing {
   internal static class RegexParser {
-    internal static ushort[] Parse (string pattern) {
+    internal static Instruction[] Parse (string pattern) {
       Reader reader;
       Node tree;
-      ushort[] bytecode;
+      Instruction[] bytecode;
 
       reader = new Reader(pattern);
       tree = _parseExpression(reader);
@@ -16,8 +16,10 @@ namespace CsRex.Parsing {
         throw new ParsingException("Unexpected \")\" in pattern.");
       }
 
-      bytecode = tree.ToBytecode(0, 1);
-      bytecode[bytecode.Length - 1] = Regex.instr_success;
+      bytecode = new Instruction[tree.CompiledLength];
+      if (tree.Compile(bytecode).Length > 0) {
+        throw new Exception("Expected buffer to be empty after compilation.");
+      }
       return bytecode;
     }
 
@@ -38,11 +40,11 @@ namespace CsRex.Parsing {
             break;
           }
           case ')': {
-            return Node.NewGroupNode(list);
+            return Node.Concatenate(list);
           }
           case '[': {
             reader.Read();
-            n = new ClassNode(_parseClass(reader));
+            n = Node.CharacterClass(_parseClass(reader));
             if (reader.Read() != ']') {
               throw new ParsingException("Missing \"]\" in pattern.");
             }
@@ -51,7 +53,7 @@ namespace CsRex.Parsing {
           }
           case '|': {
             reader.Read();
-            return Node.NewOrNode(Node.NewGroupNode(list), _parseExpression(reader));
+            return Node.Alternate(Node.Concatenate(list), _parseExpression(reader));
           }
           case '\\': {
             reader.Read();
@@ -60,20 +62,20 @@ namespace CsRex.Parsing {
             }
             switch (reader.Peek()) {
               default: {
-                list.Add(_parseModifier(Node.NewCharacterNode(reader.Read()), reader));
+                list.Add(_parseModifier(Node.Character(reader.Read()), reader));
                 break;
               }
             }
             break;
           }
           default: {
-            list.Add(_parseModifier(Node.NewCharacterNode(reader.Read()), reader));
+            list.Add(_parseModifier(Node.Character(reader.Read()), reader));
             break;
           }
         }
       }
 
-      return Node.NewGroupNode(list);
+      return Node.Concatenate(list);
     }
 
     private static Node _parseClass (Reader reader) {
@@ -82,12 +84,12 @@ namespace CsRex.Parsing {
       list = new List<Node>();
       if (reader.Peek() == '-') {
         reader.Read();
-        list.Add(Node.NewCharacterNode('-'));
+        list.Add(Node.Character('-'));
       }
       while (!reader.EndOfFile) {
         switch (reader.Peek()) {
           case ']': {
-            return Node.NewGroupNode(list);
+            return Node.Concatenate(list);
           }
           case '\\': {
             reader.Read();
@@ -96,7 +98,7 @@ namespace CsRex.Parsing {
             }
             switch (reader.Peek()) {
               default: {
-                list.Add(Node.NewCharacterNode(reader.Read()));
+                list.Add(Node.Character(reader.Read()));
                 break;
               }
             }
@@ -107,23 +109,23 @@ namespace CsRex.Parsing {
             if (reader.Peek() == '-') {
               reader.Read();
               if (reader.Peek() == ']') {
-                list.Add(Node.NewCharacterNode(a));
-                list.Add(Node.NewCharacterNode('-'));
+                list.Add(Node.Character(a));
+                list.Add(Node.Character('-'));
                 break;
               }
               if (reader.EndOfFile) {
                 throw new ParsingException("Unexpected end of pattern.");
               }
-              list.Add(Node.NewRangeNode(a, reader.Read()));
+              list.Add(Node.CharacterRange(a, reader.Read()));
               break;
             }
-            list.Add(Node.NewCharacterNode(a));
+            list.Add(Node.Character(a));
             break;
           }
         }
       }
 
-      return Node.NewGroupNode(list);
+      return Node.Concatenate(list);
     }
 
     private static Node _parseModifier (Node tree, Reader reader) {
@@ -134,27 +136,15 @@ namespace CsRex.Parsing {
       switch (reader.Peek()) {
         case '?': {
           reader.Read();
-          if (reader.Peek() == '?') {
-            reader.Read();
-            return Node.NewOptionalNode(tree, false);
-          }
-          return Node.NewOptionalNode(tree, true);
+          return Node.Optional(tree);
         }
         case '*': {
           reader.Read();
-          if (reader.Peek() == '?') {
-            reader.Read();
-            return Node.NewOptionalNode(Node.NewRepeatNode(tree, false), false);
-          }
-          return Node.NewOptionalNode(Node.NewRepeatNode(tree, true), true);
+          return Node.Optional(Node.Repeat(tree));
         }
         case '+': {
           reader.Read();
-          if (reader.Peek() == '?') {
-            reader.Read();
-            return Node.NewRepeatNode(tree, false);
-          }
-          return Node.NewRepeatNode(tree, true);
+          return Node.Repeat(tree);
         }
         default: {
           return tree;
