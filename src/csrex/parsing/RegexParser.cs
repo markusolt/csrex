@@ -4,10 +4,9 @@ using CsRex.Parsing;
 
 namespace CsRex.Parsing {
   internal static class RegexParser {
-    internal static Instruction[] Parse (string pattern) {
+    internal static Node Parse (string pattern) {
       Reader reader;
       Node tree;
-      Instruction[] bytecode;
 
       reader = new Reader(pattern);
       tree = _parseExpression(reader);
@@ -16,11 +15,7 @@ namespace CsRex.Parsing {
         throw new ParsingException("Unexpected \")\" in pattern.");
       }
 
-      bytecode = new Instruction[tree.CompiledLength];
-      if (tree.Compile(bytecode).Length > 0) {
-        throw new Exception("Expected buffer to be empty after compilation.");
-      }
-      return bytecode;
+      return tree;
     }
 
     private static Node _parseExpression (Reader reader) {

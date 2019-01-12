@@ -12,6 +12,7 @@ namespace CsRex.Parsing.Nodes {
       _character = character;
       _range = range;
       _compiledLength = 1;
+      _minLength = 1;
     }
 
     internal override void CompileNode (Span<Instruction> buffer) {

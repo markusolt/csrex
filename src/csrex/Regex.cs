@@ -1,14 +1,21 @@
 using System;
+using CsRex.Parsing;
 using CsRex;
 
 namespace CsRex {
   public class Regex {
     private Instruction[] _program;
     private ThreadManager _threads;
+    private int _minLength;
 
     public Regex (string pattern) {
-      _program = Parsing.RegexParser.Parse(pattern);
+      Node tree;
+
+      tree = RegexParser.Parse(pattern);
+
+      _program = tree.Compile();
       _threads = new ThreadManager(_program.Length + 1); // include space for implied trailing success
+      _minLength = tree.MinLength;
     }
 
     internal void Dump () {
@@ -68,6 +75,10 @@ namespace CsRex {
       _threads.Clear();
       _threads.Push(0);
       match = new Match(false);
+
+      if (tp + 1 > line.Length - _minLength) {
+        return false;
+      }
 
       while (_threads.Count > 0) {
         tp++;

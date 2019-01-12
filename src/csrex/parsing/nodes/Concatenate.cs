@@ -14,8 +14,10 @@ namespace CsRex.Parsing.Nodes {
 
       _children = children;
       _compiledLength = 0;
+      _minLength = 0;
       for (int i = 0; i < _children.Length; i++) {
         _compiledLength += _children[i].CompiledLength;
+        _minLength += _children[i].MinLength;
       }
     }
 

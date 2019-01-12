@@ -19,6 +19,7 @@ namespace CsRex.Parsing.Nodes {
       _child = child;
       _alternative = alternative;
       _compiledLength = 2 + _child.CompiledLength + _alternative.CompiledLength;
+      _minLength = _child.MinLength < _alternative.MinLength ? _child.MinLength : _alternative.MinLength;
     }
 
     internal override void CompileNode (Span<Instruction> buffer) {

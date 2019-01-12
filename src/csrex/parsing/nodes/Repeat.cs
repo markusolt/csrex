@@ -14,6 +14,7 @@ namespace CsRex.Parsing.Nodes {
 
       _child = child;
       _compiledLength = 1 + _child.CompiledLength;
+      _minLength = _child.MinLength;
     }
 
     internal Node Child {

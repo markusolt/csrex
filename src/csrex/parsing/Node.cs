@@ -7,10 +7,17 @@ using CsRex.Parsing;
 namespace CsRex.Parsing {
   internal abstract class Node {
     protected int _compiledLength;
+    protected int _minLength;
 
     internal int CompiledLength {
       get {
         return _compiledLength;
+      }
+    }
+
+    internal int MinLength {
+      get {
+        return _minLength;
       }
     }
 
