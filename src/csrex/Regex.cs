@@ -16,7 +16,7 @@ namespace CsRex {
 
     public Regex (string pattern) {
       _program = Parsing.RegexParser.Parse(pattern);
-      _threads = new ThreadManager(_program.Length);
+      _threads = new ThreadManager(_program.Length + 1); // include space for implied trailing success
     }
 
     internal void Dump () {
@@ -80,7 +80,7 @@ namespace CsRex {
       while (_threads.Count > 0) {
         tp++;
 
-        _threads.Reset();
+        _threads.Swap();
         while (_threads.TryPull(out ip)) {
           if (ip >= _program.Length) {
             match = new Match(true, offset, tp - offset);
@@ -169,7 +169,7 @@ namespace CsRex {
           continue;
 
           next_thread:
-          _threads.PushBack(ip + 1);
+          _threads.Continue(ip + 1);
           continue;
 
           kill_thread:

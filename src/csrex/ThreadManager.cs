@@ -9,7 +9,7 @@ namespace CsRex {
     private int _it;
 
     internal ThreadManager (int length) {
-      _visited = new bool[length + 1]; // include space for implied trailing success
+      _visited = new bool[length];
       _iterator = new int[1];
       _iteratorLength = 0;
       _it = 0;
@@ -21,20 +21,13 @@ namespace CsRex {
       }
     }
 
-    internal int Current {
-      get {
-        return _iterator[_it];
-      }
-    }
-
     internal void Clear () {
       _iteratorLength = 0;
+      Swap();
     }
 
-    internal void Reset () {
-      for (int i = 0; i < _visited.Length; i++) {
-        _visited[i] = false;
-      }
+    internal void Swap () {
+      Array.Clear(_visited, 0, _visited.Length);
       _it = 0;
     }
 
@@ -54,7 +47,7 @@ namespace CsRex {
       return true;
     }
 
-    internal void PushBack (int t) {
+    internal void Continue (int t) {
       if (_iterator.Length == _iteratorLength) {
         Array.Resize(ref _iterator, _iterator.Length * 2);
       }
