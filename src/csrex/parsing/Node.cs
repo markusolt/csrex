@@ -71,12 +71,35 @@ namespace CsRex.Parsing {
       return new Concatenate(children.ToArray());
     }
 
-    internal static Node CharacterClass (Node child) {
-      if (child is Concatenate) {
-        return new CharacterClass(child);
+    internal static Node CharacterClass (List<Node> children) {
+      if (children == null) {
+        throw new ArgumentNullException("Child list may not be null.", nameof(children));
       }
 
-      return child;
+      for (int i = 0; i < children.Count; i++) {
+        if (children[i] is CharacterClass) {
+          children.InsertRange(i + 1, ((CharacterClass) children[i]).Children);
+          children.RemoveAt(i);
+          i--;
+          continue;
+        }
+
+        if (children[i] is Nop) {
+          children.RemoveAt(i);
+          i--;
+          continue;
+        }
+      }
+
+      if (children.Count == 0) {
+        return new Nop();
+      }
+
+      if (children.Count == 1) {
+        return children[0];
+      }
+
+      return new CharacterClass(children.ToArray());
     }
 
     internal static Node Character (char character) {
@@ -92,6 +115,10 @@ namespace CsRex.Parsing {
         tmp = c2;
         c2 = c1;
         c1 = tmp;
+      }
+
+      if (c1 == c2) {
+        return new Character(c1);
       }
 
       if (c2 - c1 < 256) {

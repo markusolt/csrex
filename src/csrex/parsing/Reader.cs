@@ -40,5 +40,15 @@ namespace CsRex.Parsing {
 
       return _text[_pos++];
     }
+
+    internal void Expect (char c) {
+      if (c != Read()) {
+        throw new ParsingException(string.Format("Missing \"{0}\".", c));
+      }
+    }
+
+    internal Exception Unexpected () {
+      return new ParsingException(string.Format("Unexpected \"{0}\".", Peek()));
+    }
   }
 }

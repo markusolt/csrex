@@ -28,21 +28,14 @@ namespace CsRex.Parsing {
           case '(': {
             reader.Read();
             n = _parseExpression(reader);
-            if (reader.Read() != ')') {
-              throw new ParsingException("Missing \")\" in pattern.");
-            }
+            reader.Expect(')');
             list.Add(_parseModifier(n, reader));
             break;
           }
-          case ')': {
-            return Node.Concatenate(list);
-          }
           case '[': {
             reader.Read();
-            n = Node.CharacterClass(_parseClass(reader));
-            if (reader.Read() != ']') {
-              throw new ParsingException("Missing \"]\" in pattern.");
-            }
+            n = _parseCharacterClass(reader);
+            reader.Expect(']');
             list.Add(_parseModifier(n, reader));
             break;
           }
@@ -50,18 +43,46 @@ namespace CsRex.Parsing {
             reader.Read();
             return Node.Alternate(Node.Concatenate(list), _parseExpression(reader));
           }
+          case '?':
+          case '*':
+          case '+': {
+            throw reader.Unexpected();
+          }
+          case ')': {
+            return Node.Concatenate(list);
+          }
+          case ']': {
+            throw reader.Unexpected();
+          }
           case '\\': {
             reader.Read();
-            if (reader.EndOfFile) {
-              throw new ParsingException("Unexpected end of pattern.");
-            }
+
             switch (reader.Peek()) {
-              default: {
+              case '(':
+              case '[':
+              case '|':
+              case '?':
+              case '*':
+              case '+':
+              case ')':
+              case ']':
+              case '\\':
+              case '^':
+              case '$': {
                 list.Add(_parseModifier(Node.Character(reader.Read()), reader));
                 break;
               }
+              default: {
+                throw reader.Unexpected();
+              }
             }
             break;
+          }
+          case '^': {
+            throw new NotSupportedException(); // TODO
+          }
+          case '$': {
+            throw new NotSupportedException(); // TODO
           }
           default: {
             list.Add(_parseModifier(Node.Character(reader.Read()), reader));
@@ -73,76 +94,107 @@ namespace CsRex.Parsing {
       return Node.Concatenate(list);
     }
 
-    private static Node _parseClass (Reader reader) {
+    private static Node _parseCharacterClass (Reader reader) {
       List<Node> list;
 
       list = new List<Node>();
-      if (reader.Peek() == '-') {
-        reader.Read();
-        list.Add(Node.Character('-'));
+
+      if (reader.Peek() == '^') {
+        throw new NotSupportedException(); // TODO
       }
+
+      if (reader.Peek() == '-') {
+        list.Add(Node.Character(reader.Read()));
+      }
+
       while (!reader.EndOfFile) {
         switch (reader.Peek()) {
+          case '(':
+          case '[':
+          case '|':
+          case '?':
+          case '*':
+          case '+':
+          case ')': {
+            throw reader.Unexpected();
+          }
           case ']': {
-            return Node.Concatenate(list);
+            return Node.CharacterClass(list);
           }
           case '\\': {
             reader.Read();
-            if (reader.EndOfFile) {
-              throw new ParsingException("Unexpected end of pattern.");
-            }
+
             switch (reader.Peek()) {
-              default: {
+              case '(':
+              case '[':
+              case '|':
+              case '?':
+              case '*':
+              case '+':
+              case ')':
+              case ']':
+              case '\\':
+              case '^':
+              case '$': {
                 list.Add(Node.Character(reader.Read()));
                 break;
+              }
+              default: {
+                throw reader.Unexpected();
               }
             }
             break;
           }
+          case '^':
+          case '$': {
+            throw reader.Unexpected();
+          }
+          case '-': {
+            if (reader.Peek(offset: 1) != ']') {
+              throw reader.Unexpected();
+            }
+            list.Add(Node.Character(reader.Read()));
+            break;
+          }
           default: {
-            char a = reader.Read();
-            if (reader.Peek() == '-') {
+            char c;
+
+            c = reader.Read();
+            if (reader.Peek() == '-' && reader.Peek(offset: 1) != ']') {
               reader.Read();
-              if (reader.Peek() == ']') {
-                list.Add(Node.Character(a));
-                list.Add(Node.Character('-'));
-                break;
-              }
-              if (reader.EndOfFile) {
-                throw new ParsingException("Unexpected end of pattern.");
-              }
-              list.Add(Node.CharacterRange(a, reader.Read()));
+              list.Add(Node.CharacterRange(c, reader.Read()));
               break;
             }
-            list.Add(Node.Character(a));
+
+            list.Add(Node.Character(c));
             break;
           }
         }
       }
 
-      return Node.Concatenate(list);
+      return Node.CharacterClass(list);
     }
 
-    private static Node _parseModifier (Node tree, Reader reader) {
+    private static Node _parseModifier (Node n, Reader reader) {
       if (reader.EndOfFile) {
-        return tree;
+        return n;
       }
 
       switch (reader.Peek()) {
         case '?': {
           reader.Read();
-          return Node.Optional(tree);
+          return Node.Optional(n);
         }
         case '*': {
           reader.Read();
-          return Node.Optional(Node.Repeat(tree));
+          return Node.Optional(Node.Repeat(n));
         }
         case '+': {
           reader.Read();
-          return Node.Repeat(tree);
+          return Node.Repeat(n);
         }
         default: {
-          return tree;
+          return n;
         }
       }
     }
