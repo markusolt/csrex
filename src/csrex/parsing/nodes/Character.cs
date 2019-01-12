@@ -22,7 +22,7 @@ namespace CsRex.Parsing.Nodes {
         throw new ArgumentException("Insufficient space in buffer.", nameof(buffer));
       }
 
-      buffer[0] = new Instruction(Regex.instr_character, parameter: (ushort) _character);
+      buffer[0] = new Instruction(Opcode.Character, parameter: (ushort) _character);
       return buffer.Slice(1);
     }
   }

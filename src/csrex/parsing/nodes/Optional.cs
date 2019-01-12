@@ -32,7 +32,7 @@ namespace CsRex.Parsing.Nodes {
         throw new ArgumentException("Insufficient space in buffer.", nameof(buffer));
       }
 
-      buffer[0] = new Instruction(Regex.instr_branch, parameter: (ushort) _child.CompiledLength);
+      buffer[0] = new Instruction(Opcode.Branch, parameter: (ushort) _child.CompiledLength);
       return _child.Compile(buffer.Slice(1));
     }
   }

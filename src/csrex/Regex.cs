@@ -6,14 +6,6 @@ namespace CsRex {
     private Instruction[] _program;
     private ThreadManager _threads;
 
-    internal const byte instr_character = 0;
-    internal const byte instr_range = 1;
-    internal const byte instr_class = 2;
-    internal const byte instr_branch = 3;
-    internal const byte instr_branchback = 4;
-    internal const byte instr_jump = 5;
-    internal const byte instr_jumpback = 6;
-
     public Regex (string pattern) {
       _program = Parsing.RegexParser.Parse(pattern);
       _threads = new ThreadManager(_program.Length + 1); // include space for implied trailing success
@@ -27,33 +19,33 @@ namespace CsRex {
         instr = _program[i];
         Console.Write(" {0,3}: ", i);
 
-        switch (instr.Id) {
+        switch (instr.Op) {
 
-          case instr_character: {
+          case Opcode.Character: {
             Console.Write("character {0}", (char) instr.Parameter);
             break;
           }
-          case instr_range: {
+          case Opcode.Range: {
             Console.Write("range {0}-{1}", (char) instr.Parameter, (char) (instr.Parameter + instr.Length));
             break;
           }
-          case instr_class: {
-            Console.Write("class {0}:", instr.Parameter);
+          case Opcode.Class: {
+            Console.Write("class {0}:", i + instr.Parameter + 1);
             break;
           }
-          case instr_branch: {
+          case Opcode.Branch: {
             Console.Write("branch {0}:", i + instr.Parameter + 1);
             break;
           }
-          case instr_branchback: {
+          case Opcode.Branchback: {
             Console.Write("branch {0}:", i - instr.Parameter);
             break;
           }
-          case instr_jump: {
+          case Opcode.Jump: {
             Console.Write("jump {0}:", i + instr.Parameter + 1);
             break;
           }
-          case instr_jumpback: {
+          case Opcode.Jumpback: {
             Console.Write("jump {0}:", i - instr.Parameter);
             break;
           }
@@ -89,22 +81,22 @@ namespace CsRex {
           }
           instr = _program[ip];
 
-          switch (instr.Id) {
-            case instr_character: {
+          switch (instr.Op) {
+            case Opcode.Character: {
               if (tp >= line.Length || line[tp] != (char) instr.Parameter) {
                 goto kill_thread;
               }
 
               goto next_thread;
             }
-            case instr_range: {
+            case Opcode.Range: {
               if (tp >= line.Length || line[tp] < (char) instr.Parameter || line[tp] > (char) (instr.Parameter + instr.Length)) {
                 goto kill_thread;
               }
 
               goto next_thread;
             }
-            case instr_class: {
+            case Opcode.Class: {
               int skip;
               char c;
 
@@ -117,15 +109,15 @@ namespace CsRex {
               for (ip = ip + 1; ip < skip; ip++) {
                 instr = _program[ip];
 
-                switch (instr.Id) {
-                  case instr_character: {
+                switch (instr.Op) {
+                  case Opcode.Character: {
                     if (c == (char) instr.Parameter) {
                       ip = skip - 1;
                       goto next_thread;
                     }
                     break;
                   }
-                  case instr_range: {
+                  case Opcode.Range: {
                     if ((char) instr.Parameter <= c && c <= (char) (instr.Parameter + instr.Length)) {
                       ip = skip - 1;
                       goto next_thread;
@@ -140,22 +132,22 @@ namespace CsRex {
 
               goto kill_thread;
             }
-            case instr_branch: {
+            case Opcode.Branch: {
               _threads.Push(ip + instr.Parameter + 1);
 
               break;
             }
-            case instr_branchback: {
+            case Opcode.Branchback: {
               _threads.Push(ip - instr.Parameter);
 
               break;
             }
-            case instr_jump: {
+            case Opcode.Jump: {
               ip = ip  + instr.Parameter;
 
               break;
             }
-            case instr_jumpback: {
+            case Opcode.Jumpback: {
               ip = ip - instr.Parameter - 1;
 
               break;

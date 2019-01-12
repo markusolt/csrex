@@ -33,7 +33,7 @@ namespace CsRex.Parsing.Nodes {
       }
 
       buffer = _child.Compile(buffer);
-      buffer[0] = new Instruction(Regex.instr_branchback, parameter: (ushort) _child.CompiledLength);
+      buffer[0] = new Instruction(Opcode.Branchback, parameter: (ushort) _child.CompiledLength);
       return buffer.Slice(1);
     }
   }

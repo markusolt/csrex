@@ -24,7 +24,7 @@ namespace CsRex.Parsing.Nodes {
         throw new ArgumentException("Insufficient space in buffer.", nameof(buffer));
       }
 
-      buffer[0] = new Instruction(Regex.instr_range, parameter: (ushort) _character, length: _range);
+      buffer[0] = new Instruction(Opcode.Range, parameter: (ushort) _character, length: _range);
       return buffer.Slice(1);
     }
   }
