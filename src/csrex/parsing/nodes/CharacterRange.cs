@@ -11,21 +11,11 @@ namespace CsRex.Parsing.Nodes {
     internal CharacterRange (char character, byte range) {
       _character = character;
       _range = range;
+      _compiledLength = 1;
     }
 
-    internal override int CompiledLength {
-      get {
-        return 1;
-      }
-    }
-
-    internal override Span<Instruction> Compile (Span<Instruction> buffer) {
-      if (buffer.Length < 1) {
-        throw new ArgumentException("Insufficient space in buffer.", nameof(buffer));
-      }
-
+    internal override void CompileNode (Span<Instruction> buffer) {
       buffer[0] = new Instruction(Opcode.Range, parameter: (ushort) _character, length: _range);
-      return buffer.Slice(1);
     }
   }
 }

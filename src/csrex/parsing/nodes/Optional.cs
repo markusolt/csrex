@@ -13,6 +13,7 @@ namespace CsRex.Parsing.Nodes {
       }
 
       _child = child;
+      _compiledLength = 1 + _child.CompiledLength;
     }
 
     internal Node Child {
@@ -21,19 +22,9 @@ namespace CsRex.Parsing.Nodes {
       }
     }
 
-    internal override int CompiledLength {
-      get {
-        return 1 + _child.CompiledLength;
-      }
-    }
-
-    internal override Span<Instruction> Compile (Span<Instruction> buffer) {
-      if (buffer.Length < CompiledLength) {
-        throw new ArgumentException("Insufficient space in buffer.", nameof(buffer));
-      }
-
+    internal override void CompileNode (Span<Instruction> buffer) {
       buffer[0] = new Instruction(Opcode.Branch, parameter: (ushort) _child.CompiledLength);
-      return _child.Compile(buffer.Slice(1));
+      _child.Compile(buffer.Slice(1));
     }
   }
 }

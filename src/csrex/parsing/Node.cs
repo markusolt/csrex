@@ -6,11 +6,32 @@ using CsRex.Parsing;
 
 namespace CsRex.Parsing {
   internal abstract class Node {
-    internal abstract int CompiledLength {
-      get;
+    protected int _compiledLength;
+
+    internal int CompiledLength {
+      get {
+        return _compiledLength;
+      }
     }
 
-    internal abstract Span<Instruction> Compile (Span<Instruction> buffer);
+    internal Instruction[] Compile () {
+      Instruction[] bytecode;
+
+      bytecode = new Instruction[CompiledLength];
+      Compile(bytecode);
+      return bytecode;
+    }
+
+    internal Span<Instruction> Compile (Span<Instruction> buffer) {
+      if (buffer.Length < CompiledLength) {
+        throw new ArgumentException("Insufficient space in buffer.", nameof(buffer));
+      }
+
+      CompileNode(buffer.Slice(0, CompiledLength));
+      return buffer.Slice(CompiledLength);
+    }
+
+    internal abstract void CompileNode (Span<Instruction> buffer);
 
     internal static Node Concatenate (List<Node> children) {
       if (children == null) {

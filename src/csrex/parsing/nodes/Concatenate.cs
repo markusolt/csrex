@@ -6,7 +6,6 @@ using CsRex.Parsing.Nodes;
 namespace CsRex.Parsing.Nodes {
   internal class Concatenate : Node {
     private Node[] _children;
-    private int _length;
 
     internal Concatenate (Node[] children) {
       if (children == null) {
@@ -14,9 +13,9 @@ namespace CsRex.Parsing.Nodes {
       }
 
       _children = children;
-      _length = 0;
+      _compiledLength = 0;
       for (int i = 0; i < _children.Length; i++) {
-        _length += _children[i].CompiledLength;
+        _compiledLength += _children[i].CompiledLength;
       }
     }
 
@@ -26,21 +25,10 @@ namespace CsRex.Parsing.Nodes {
       }
     }
 
-    internal override int CompiledLength {
-      get {
-        return _length;
-      }
-    }
-
-    internal override Span<Instruction> Compile (Span<Instruction> buffer) {
-      if (buffer.Length < CompiledLength) {
-        throw new ArgumentException("Insufficient space in buffer.", nameof(buffer));
-      }
-
+    internal override void CompileNode (Span<Instruction> buffer) {
       for (int i = 0; i < _children.Length; i++) {
         buffer = _children[i].Compile(buffer);
       }
-      return buffer;
     }
   }
 }

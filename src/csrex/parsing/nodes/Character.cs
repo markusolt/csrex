@@ -9,21 +9,11 @@ namespace CsRex.Parsing.Nodes {
 
     internal Character (char character) {
       _character = character;
+      _compiledLength = 1;
     }
 
-    internal override int CompiledLength {
-      get {
-        return 1;
-      }
-    }
-
-    internal override Span<Instruction> Compile (Span<Instruction> buffer) {
-      if (buffer.Length < 1) {
-        throw new ArgumentException("Insufficient space in buffer.", nameof(buffer));
-      }
-
+    internal override void CompileNode (Span<Instruction> buffer) {
       buffer[0] = new Instruction(Opcode.Character, parameter: (ushort) _character);
-      return buffer.Slice(1);
     }
   }
 }
