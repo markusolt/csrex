@@ -137,32 +137,38 @@ namespace CsRex.Parsing {
       return new Concatenate(ranges);
     }
 
-    internal static Node Optional (Node child) {
+    internal static Node Optional (Node child, bool greedy) {
       if (child is Nop) {
         return child;
       }
 
       if (child is Optional) {
-        return child;
+        if (((Optional) child).Greedy) {
+          return child;
+        }
+        return new Optional(((Optional) child).Child, greedy);
       }
 
-      return new Optional(child);
+      return new Optional(child, greedy);
     }
 
-    internal static Node Repeat (Node child) {
+    internal static Node Repeat (Node child, bool greedy) {
       if (child is Nop) {
         return child;
       }
 
       if (child is Repeat) {
-        return child;
+        if (((Repeat) child).Greedy) {
+          return child;
+        }
+        return new Repeat(((Repeat) child).Child, greedy);
       }
 
       if (child is Optional) {
-        return Optional(Repeat(((Optional) child).Child));
+        return Optional(Repeat(((Optional) child).Child, greedy), ((Optional) child).Greedy);
       }
 
-      return new Repeat(child);
+      return new Repeat(child, greedy);
     }
 
     internal static Node Alternate (Node child, Node alternative) {

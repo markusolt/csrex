@@ -183,15 +183,27 @@ namespace CsRex.Parsing {
       switch (reader.Peek()) {
         case '?': {
           reader.Read();
-          return Node.Optional(n);
+          if (reader.Peek() == '?') {
+            reader.Read();
+            return Node.Optional(n, greedy: false);
+          }
+          return Node.Optional(n, greedy: true);
         }
         case '*': {
           reader.Read();
-          return Node.Optional(Node.Repeat(n));
+          if (reader.Peek() == '?') {
+            reader.Read();
+            return Node.Optional(Node.Repeat(n, greedy: false), greedy: false);
+          }
+          return Node.Optional(Node.Repeat(n, greedy: true), greedy: true);
         }
         case '+': {
           reader.Read();
-          return Node.Repeat(n);
+          if (reader.Peek() == '?') {
+            reader.Read();
+            return Node.Repeat(n, greedy: false);
+          }
+          return Node.Repeat(n, greedy: true);
         }
         default: {
           return n;

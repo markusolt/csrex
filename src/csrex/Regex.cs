@@ -21,10 +21,11 @@ namespace CsRex {
     internal void Dump () {
       Instruction instr;
 
-      Console.Write("--------------------------------\nCompiled Regex:\n\n");
+      Console.Write("--------------------------------\nCompiled Regex:\n");
+      Console.Write(" length: {0}\n\n", _program.Length);
       for (int i = 0; i < _program.Length; i++) {
         instr = _program[i];
-        Console.Write(" {0,3}: ", i);
+        Console.Write("  {0,2}: ", i);
 
         switch (instr.Op) {
 
@@ -38,6 +39,14 @@ namespace CsRex {
           }
           case Opcode.Class: {
             Console.Write("class {0}:", i + instr.Parameter + 1);
+            break;
+          }
+          case Opcode.BranchFast: {
+            Console.Write("branchfast {0}:", i + instr.Parameter + 1);
+            break;
+          }
+          case Opcode.BranchbackFast: {
+            Console.Write("branchfast {0}:", i - instr.Parameter);
             break;
           }
           case Opcode.Branch: {
@@ -80,39 +89,39 @@ namespace CsRex {
         return false;
       }
 
-      while (_threads.Count > 0) {
+      while (_threads.Swap()) {
         tp++;
-
-        _threads.Swap();
         while (_threads.TryPull(out ip)) {
           if (ip >= _program.Length) {
             match = new Match(true, offset, tp - offset);
 
-            goto kill_thread;
+            break;
           }
           instr = _program[ip];
 
           switch (instr.Op) {
             case Opcode.Character: {
               if (tp >= line.Length || line[tp] != (char) instr.Parameter) {
-                goto kill_thread;
+                continue;
               }
 
-              goto next_thread;
+              _threads.Push(ip + 1);
+              continue;
             }
             case Opcode.Range: {
               if (tp >= line.Length || line[tp] < (char) instr.Parameter || line[tp] > (char) (instr.Parameter + instr.Length)) {
-                goto kill_thread;
+                continue;
               }
 
-              goto next_thread;
+              _threads.Push(ip + 1);
+              continue;
             }
             case Opcode.Class: {
               int skip;
               char c;
 
               if (tp >= line.Length) {
-                goto kill_thread;
+                continue;
               }
               skip = ip + instr.Parameter + 1;
               c = line[tp];
@@ -123,15 +132,15 @@ namespace CsRex {
                 switch (instr.Op) {
                   case Opcode.Character: {
                     if (c == (char) instr.Parameter) {
-                      ip = skip - 1;
-                      goto next_thread;
+                      _threads.Push(skip);
+                      goto end_of_class;
                     }
                     break;
                   }
                   case Opcode.Range: {
                     if ((char) instr.Parameter <= c && c <= (char) (instr.Parameter + instr.Length)) {
-                      ip = skip - 1;
-                      goto next_thread;
+                      _threads.Push(skip);
+                      goto end_of_class;
                     }
                     break;
                   }
@@ -141,42 +150,49 @@ namespace CsRex {
                 }
               }
 
-              goto kill_thread;
+              end_of_class:
+              continue;
+            }
+            case Opcode.BranchFast: {
+              _threads.PushFront(ip + 1);
+              _threads.PushFront(ip + instr.Parameter + 1);
+
+              continue;
+            }
+            case Opcode.BranchbackFast: {
+              _threads.PushFront(ip + 1);
+              _threads.PushFront(ip - instr.Parameter);
+
+              continue;
             }
             case Opcode.Branch: {
-              _threads.Push(ip + instr.Parameter + 1);
+              _threads.PushFront(ip + instr.Parameter + 1);
+              _threads.PushFront(ip + 1);
 
-              break;
+              continue;
             }
             case Opcode.Branchback: {
-              _threads.Push(ip - instr.Parameter);
+              _threads.PushFront(ip - instr.Parameter);
+              _threads.PushFront(ip + 1);
 
-              break;
+              continue;
             }
             case Opcode.Jump: {
-              ip = ip  + instr.Parameter;
+              _threads.PushFront(ip + instr.Parameter + 1);
 
-              break;
+              continue;
             }
             case Opcode.Jumpback: {
-              ip = ip - instr.Parameter - 1;
+              _threads.PushFront(ip - instr.Parameter);
 
-              break;
+              continue;
             }
             default: {
               throw new Exception("Unkown instruction.");
             }
           }
 
-          _threads.Push(ip + 1);
-          continue;
-
-          next_thread:
-          _threads.Continue(ip + 1);
-          continue;
-
-          kill_thread:
-          continue;
+          throw new Exception("Instruction did not complete properly.");
         }
       }
 
