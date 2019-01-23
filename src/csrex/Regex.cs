@@ -74,6 +74,7 @@ namespace CsRex {
     public bool Match (ReadOnlySpan<char> line, out Match match, int offset = 0) {
       int tp;
       int ip;
+      int sleep;
       Instruction instr;
 
       if (offset < 0 || offset > line.Length) {
@@ -89,8 +90,8 @@ namespace CsRex {
         return false;
       }
 
-      while (_threads.Swap()) {
-        tp++;
+      while (_threads.Swap(out sleep)) {
+        tp += sleep + 1;
         while (_threads.TryPull(out ip)) {
           if (ip >= _program.Length) {
             match = new Match(true, offset, tp - offset);
