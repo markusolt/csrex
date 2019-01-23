@@ -6,6 +6,7 @@ namespace CsRex {
     Character,
     Range,
     Class,
+    Word,
     BranchFast,
     BranchbackFast,
     Branch,

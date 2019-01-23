@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using CsRex;
 using CsRex.Parsing;
 using CsRex.Parsing.Nodes;
@@ -22,11 +23,11 @@ namespace CsRex.Parsing.Nodes {
       _minLength = _child.MinLength < _alternative.MinLength ? _child.MinLength : _alternative.MinLength;
     }
 
-    internal override void CompileNode (Span<Instruction> buffer) {
+    internal override void CompileNode (Span<Instruction> buffer, StringBuilder words) {
       buffer[0] = new Instruction(Opcode.Branch, parameter: (ushort) (_child.CompiledLength + 1));
-      buffer = _child.Compile(buffer.Slice(1));
+      buffer = _child.Compile(buffer.Slice(1), words);
       buffer[0] = new Instruction(Opcode.Jump, parameter: (ushort) _alternative.CompiledLength);
-      _alternative.Compile(buffer.Slice(1));
+      _alternative.Compile(buffer.Slice(1), words);
     }
   }
 }

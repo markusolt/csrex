@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using CsRex;
 using CsRex.Parsing;
 using CsRex.Parsing.Nodes;
@@ -31,8 +32,8 @@ namespace CsRex.Parsing.Nodes {
       }
     }
 
-    internal override void CompileNode (Span<Instruction> buffer) {
-      buffer = _child.Compile(buffer);
+    internal override void CompileNode (Span<Instruction> buffer, StringBuilder words) {
+      buffer = _child.Compile(buffer, words);
 
       if (_greedy) {
         buffer[0] = new Instruction(Opcode.BranchbackFast, parameter: (ushort) _child.CompiledLength);

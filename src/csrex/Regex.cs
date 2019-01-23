@@ -5,6 +5,7 @@ using CsRex;
 namespace CsRex {
   public class Regex {
     private Instruction[] _program;
+    private char[] _words;
     private ThreadManager _threads;
     private int _minLength;
 
@@ -13,7 +14,7 @@ namespace CsRex {
 
       tree = RegexParser.Parse(pattern);
 
-      _program = tree.Compile();
+      (_program, _words) = tree.Compile();
       _threads = new ThreadManager(_program.Length + 1); // include space for implied trailing success
       _minLength = tree.MinLength;
     }
@@ -39,6 +40,10 @@ namespace CsRex {
           }
           case Opcode.Class: {
             Console.Write("class {0}:", i + instr.Parameter + 1);
+            break;
+          }
+          case Opcode.Word: {
+            Console.Write("word \"{0}\"", _words.AsSpan().Slice(instr.Parameter, instr.Length).ToString());
             break;
           }
           case Opcode.BranchFast: {
@@ -152,6 +157,28 @@ namespace CsRex {
               }
 
               end_of_class:
+              continue;
+            }
+            case Opcode.Word: {
+              ReadOnlySpan<char> word;
+
+              if (instr.Length == 0) {
+                _threads.PushFront(ip + 1);
+                continue;
+              }
+
+              if (tp > line.Length - instr.Length) {
+                continue;
+              }
+
+              word = _words.AsSpan().Slice(instr.Parameter, instr.Length);
+              for (int i = 0; i < word.Length; i++) {
+                if (line[tp + i] != word[i]) {
+                  continue;
+                }
+              }
+
+              _threads.Push(ip + 1, word.Length - 1);
               continue;
             }
             case Opcode.BranchFast: {

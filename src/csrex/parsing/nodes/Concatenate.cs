@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using CsRex;
 using CsRex.Parsing;
 using CsRex.Parsing.Nodes;
@@ -27,9 +28,9 @@ namespace CsRex.Parsing.Nodes {
       }
     }
 
-    internal override void CompileNode (Span<Instruction> buffer) {
+    internal override void CompileNode (Span<Instruction> buffer, StringBuilder words) {
       for (int i = 0; i < _children.Length; i++) {
-        buffer = _children[i].Compile(buffer);
+        buffer = _children[i].Compile(buffer, words);
       }
     }
   }

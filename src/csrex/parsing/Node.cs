@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using CsRex;
 using CsRex.Parsing.Nodes;
 using CsRex.Parsing;
@@ -21,26 +22,35 @@ namespace CsRex.Parsing {
       }
     }
 
-    internal Instruction[] Compile () {
-      Instruction[] bytecode;
+    internal (Instruction[] program, char[] words) Compile () {
+      Instruction[] program;
+      StringBuilder wordBuffer;
+      char[] words;
 
-      bytecode = new Instruction[CompiledLength];
-      Compile(bytecode);
-      return bytecode;
+      program = new Instruction[CompiledLength];
+      wordBuffer = new StringBuilder();
+
+      Compile(program.AsSpan(), wordBuffer);
+      words = new char[wordBuffer.Length];
+      wordBuffer.CopyTo(0, words, 0, wordBuffer.Length);
+
+      return (program, words);
     }
 
-    internal Span<Instruction> Compile (Span<Instruction> buffer) {
+    internal Span<Instruction> Compile (Span<Instruction> buffer, StringBuilder words) {
       if (buffer.Length < CompiledLength) {
         throw new ArgumentException("Insufficient space in buffer.", nameof(buffer));
       }
 
-      CompileNode(buffer.Slice(0, CompiledLength));
+      CompileNode(buffer.Slice(0, CompiledLength), words);
       return buffer.Slice(CompiledLength);
     }
 
-    internal abstract void CompileNode (Span<Instruction> buffer);
+    internal abstract void CompileNode (Span<Instruction> buffer, StringBuilder words);
 
     internal static Node Concatenate (List<Node> children) {
+      StringBuilder buffer;
+
       if (children == null) {
         throw new ArgumentNullException("Child list may not be null.", nameof(children));
       }
@@ -58,6 +68,33 @@ namespace CsRex.Parsing {
           i--;
           continue;
         }
+      }
+
+      buffer = new StringBuilder();
+      for (int i = 0; i < children.Count; i++) {
+        if (children[i] is Character) {
+          buffer.Append((children[i] as Character)!.Value);
+          children.RemoveAt(i);
+          i--;
+          continue;
+        }
+
+        if (children[i] is Word) {
+          buffer.Append((children[i] as Word)!.Value);
+          children.RemoveAt(i);
+          i--;
+          continue;
+        }
+
+        if (buffer.Length > 0) {
+          children.Insert(i, Word(buffer.ToString()));
+          buffer.Clear();
+          i++;
+          continue;
+        }
+      }
+      if (buffer.Length > 0) {
+        children.Add(Word(buffer.ToString()));
       }
 
       if (children.Count == 0) {
@@ -135,6 +172,18 @@ namespace CsRex.Parsing {
       Console.WriteLine(" (range): {0}-{1}", (int) c1, (int) c2);
       ranges[ranges.Length - 1] = new CharacterRange(c1, (byte) (c2 - c1));
       return new Concatenate(ranges);
+    }
+
+    internal static Node Word (string word) {
+      if (word.Length == 0) {
+        return new Nop();
+      }
+
+      if (word.Length == 1) {
+        return Character(word[0]);
+      }
+
+      return new Word(word);
     }
 
     internal static Node Optional (Node child, bool greedy) {
