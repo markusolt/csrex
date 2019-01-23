@@ -56,7 +56,7 @@ namespace CsRex {
       int pos;
 
       pos = (_delimiter - _read) & (_threads.Length - 1);
-      while (_threads[pos].Sleep > _skipSleep || _read > 0 && _visited[_threads[pos].Position]) {
+      while (_read > 0 && _threads[pos].Sleep > _skipSleep || _read > 0 && _visited[_threads[pos].Position]) {
         if (_threads[pos].Sleep > _skipSleep) {
           Push(_threads[pos].Position, _threads[pos].Sleep - _skipSleep - 1);
         }
